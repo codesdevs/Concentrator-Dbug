@@ -1,0 +1,12 @@
+1
+package.json
+package-lock.json
+.hbuilderx
+.vscode
+node_modules
+unpackage
+.hbuilderx
+1.js
+2.js
+crc16Test.js
+test.js

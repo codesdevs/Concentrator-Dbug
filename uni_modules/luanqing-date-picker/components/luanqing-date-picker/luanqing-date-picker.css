@@ -1,0 +1,47 @@
+
+.title_bar{
+	width: calc(100vw - 56rpx);
+	padding-left: 28rpx;
+	padding-right: 28rpx;
+	height: 100rpx;
+	background-color: #ffffff;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1rpx solid #F4F6F8;
+}
+
+.year_text{
+	font-size: 28rpx;
+	color: #333333;
+	margin-left: 28rpx;
+	margin-right: 34rpx;
+}
+
+.title_text{
+	color: #333333;
+	font-size: 28rpx;
+	font-weight: 500;
+}
+
+.year_month_bar{
+	padding-top: 10rpx;
+	padding-bottom: 10rpx;
+	background-color: #ffffff;
+}
+
+.cancel_text{
+	/* color: #E00300; */
+	font-size: 28rpx;
+	font-weight: 500;
+}
+
+.confirm_text{
+	/* color: #E00300; */
+	background-color: #ffffff;
+	padding: 8rpx 20rpx;
+	border-radius: 10rpx;
+	font-size: 28rpx;
+	font-weight: 500;
+}

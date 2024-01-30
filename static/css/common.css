@@ -1,0 +1,32 @@
+page {
+    --themeColor: #0055A7;
+}
+
+.date-value {
+    color: white;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    width: fit-content;
+}
+
+.succes {
+    color: #4CAF50;
+    font-weight: 800;
+}
+
+.error {
+    color: #f44336;
+    font-weight: 800;
+}
+
+.tabs-fixed {
+    z-index: 990;
+    position: fixed;
+    left: 0;
+    width: 100%;
+}
+
+.link {
+    color: #61c5ef;
+}
