@@ -160,7 +160,7 @@
                 <view class="form" v-show="protectiveCurrentShow">
                     <van-cell-group custom-class="form-class">
                         <van-field :value="protectiveCurrent" type="digit" @change="protectiveCurrentChange" clearable
-                            label="保护电流" placeholder="请输入保护电流(100-320mA)">
+                            label="保护电流(mA)" placeholder="请输入保护电流(100-320mA)">
                         </van-field>
                         <van-button type="primary" :block="true" size="large" color="var(--themeColor)"
                             @click="saveProtectiveCurrent">设置</van-button>
@@ -190,7 +190,7 @@
         <!-- 断开连接和保存，固定底部 -->
         <view class="bottom">
             <view class="break">
-                <van-button type="default" size="large" @click="close">断开连接</van-button>
+                <van-button type="danger" size="large" @click="close">断开连接</van-button>
             </view>
             <!-- <view class="save">
                 <van-button type="primary" size="large" color="var(--themeColor)" @click="save">保存</van-button>
@@ -624,12 +624,16 @@ export default {
                 return
             }
             //转换成16进制
-            protectiveCurrent = decToHexByLen(protectiveCurrent, 2)
+            protectiveCurrent = reverseString(decToHexByLen(protectiveCurrent, 2))
             console.log('protectiveCurrent Hex', protectiveCurrent)
             var crc16Code = hexStrToCRC16Modbus(`10 00 00 00 72 FF FF FF FF 41 ${protectiveCurrent}`)
             console.log('crc16Code', crc16Code)
             var hex = `68 10 00 00 00 72 FF FF FF FF 41 ${protectiveCurrent} ${crc16Code} 16`
             console.log('hex', hex)
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
             this.writeBLECharacteristicValue(hex)
         },
         //选择采集通道确定
@@ -964,6 +968,31 @@ export default {
                                     // this.writeBLECharacteristicValue(this.networkHexStr)
                                 }
                                 console.log("=================设备回复89功能码==>修改编号回复报文方法结束=================")
+                                break;
+                            case 'f2':
+                                //保护电流
+                                console.log("=================设备回复设置保护电流方法开始=================")
+                                console.log("=================设置保护电流报文数据==>：" + hex + "=================")
+                                console.log("============设备编号原始报文==>：" + hex.substring(2, 10) + "=================")
+                                var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
+                                console.log("============设备编号==>：" + deviceNumber + "=================")
+                                uni.hideLoading();
+                                if (this.device.number == Number(deviceNumber)) {
+                                    uni.showToast({
+                                        title: '设置保护电流成功',
+                                        icon: 'none'
+                                    })
+                                    // this.writeBLECharacteristicValue(this.networkHexStr)
+                                } else {
+                                    uni.showToast({
+                                        title: '设置保护电流失败',
+                                        icon: 'none'
+                                    })
+                                    // this.writeBLECharacteristicValue(this.networkHexStr)
+                                }
+                                console.log("=================设备回复设置保护电流方法结束=================")
+                                break;
+
                             default:
                                 break;
                         }
@@ -1074,7 +1103,7 @@ export default {
                                 //BCD格式，需要先反转再进行转换
                                 var protectiveCurrent = hexToDec(reverseString(hex.substring(12, 16)))
                                 console.log("============保护电流==>：" + protectiveCurrent + "=================")
-                                this.protectiveCurrent = protectiveCurrent + 'mA'
+                                this.protectiveCurrent = protectiveCurrent
                                 uni.hideLoading();
                                 console.log("=================设备发送保存保护电流回复方法结束=================")
                                 break;
@@ -1095,17 +1124,41 @@ export default {
                                 var archivesNumber = hex.substring(12, 14)
                                 console.log("============档案数量==>：" + archivesNumber + "=================")
                                 uni.hideLoading();
-                                uni.showModal({
-                                    title: '请求水表档案失败！',
-                                    content: '档案数量：' + Number(archivesNumber),
-                                    success: function (res) {
-                                        if (res.confirm) {
-                                            console.log('用户点击确定');
-                                        } else if (res.cancel) {
-                                            console.log('用户点击取消');
-                                        }
-                                    }
+                                // uni.showModal({
+                                //     title: '请求水表档案失败！',
+                                //     content: '档案数量：' + Number(archivesNumber),
+                                //     success: function (res) {
+                                //         if (res.confirm) {
+                                //             console.log('用户点击确定');
+                                //         } else if (res.cancel) {
+                                //             console.log('用户点击取消');
+                                //         }
+                                //     }
+                                // });
+                                break;
+                        }
+                        break;
+                    case 34:
+                        //去掉前10位,后面的不需要去除
+                        hex = hex.substring(10, hex.length)
+                        console.log("去掉前10位后的hex", hex)
+                        //校验功能码，前2位
+                        console.log("校验功能码", hex.substring(0, 2))
+                        switch (hex.substring(0, 2)) {
+                            case 'f8':
+                                console.log("=================设备发送透明转发回复方法开始=================")
+                                console.log("=================透明转发回复报文数据==>：" + hex + "=================")
+                                //数据校验码0-16
+                                var dataCheckCode = hex.substring(16, 18)
+                                console.log('dataCheckCode', dataCheckCode)
+                                uni.hideLoading();
+                                uni.showToast({
+                                    title: '透转失败',
+                                    icon: 'none',
+                                    mask: true,
+                                    duration: 2000
                                 });
+                                console.log("=================设备发送透明转发回复方法结束=================")
                                 break;
                         }
                         break;
@@ -1741,7 +1794,7 @@ export default {
         align-items: center;
 
         text {
-            margin-left: 30rpx;
+            margin-left: 32rpx;
             font-size: 35rpx;
         }
     }
