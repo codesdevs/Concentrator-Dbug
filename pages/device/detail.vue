@@ -39,12 +39,12 @@
                             placeholder="请输入远程主ip及端口" @blur="remoteMainIpBlur" />
                         <van-field :value="device.remoteBackupIp" required clearable label="远程备ip及端口" title-width="7.1em"
                             placeholder="请输入远程备ip及端口" @blur="remoteBackupIpBlur" />
-                        <van-field :value="device.localIp" type="digit" clearable label="本地ip" title-width="7.1em"
+                        <!-- <van-field :value="device.localIp" type="digit" clearable label="本地ip" title-width="7.1em"
                             placeholder="请输入本地ip" @blur="localIpBlur" />
                         <van-field :value="device.subnetMask" type="digit" clearable label="子网掩码" title-width="7.1em"
                             placeholder="请输入子网掩码" @blur="subnetMaskBlur" />
                         <van-field :value="device.gateway" type="digit" clearable label="网关" title-width="7.1em"
-                            placeholder="请输入网关" @blur="gatewayBlur" />
+                            placeholder="请输入网关" @blur="gatewayBlur" /> -->
                         <van-button type="primary" :block="true" size="large" color="var(--themeColor)"
                             @click="saveDeviceConfig">设置</van-button>
                     </van-cell-group>
@@ -84,7 +84,7 @@
                 <view class="top">
                     <view class="title" @click="expandReadMeter">
                         <van-icon :name="readMeterShow ? 'arrow-down' : 'arrow-up'" />
-                        <view>抄标控制</view>
+                        <view>抄表控制</view>
                     </view>
                     <view class="refresh"><van-button type="info" round color="var(--themeColor)" icon="replay" size="small"
                             @click="refreshDeviceConfig" v-show="false">刷新</van-button></view>
@@ -182,7 +182,7 @@
             <view class="device-number-input">
                 <text>41</text>
                 <van-field :value="device.number" placeholder="请输入设备名称" maxlength="8" type="number" clearable
-                    :border="false" @change="editDeviceNumberChange" custom-style="font-size:35rpx;margin-left: -20rpx;" />
+                    :border="false" @change="editDeviceNumberChange" custom-style="font-size:35rpx;margin-left: -28rpx;" />
             </view>
             <van-button type="default" color="var(--themeColor)" size="large" :loading="editDeviceNumberSubmitLoading"
                 custom-style="margin-top:20rpx;display:flex;width:90%;" @click="editDeviceNumberHandler">提交</van-button>
@@ -869,6 +869,7 @@ export default {
                                 console.log("============设备编号原始报文==>：" + hex.substring(2, 10) + "=================")
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
+                                uni.hideLoading();
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '恢复出厂设置成功',
@@ -890,15 +891,16 @@ export default {
                                 console.log("============设备编号原始报文==>：" + hex.substring(2, 10) + "=================")
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
+                                uni.hideLoading();
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
-                                        title: '保存设备参数配置成功',
+                                        title: '设备参数配置成功',
                                         icon: 'none'
                                     })
                                     this.writeBLECharacteristicValue(this.networkHexStr)
                                 } else {
                                     uni.showToast({
-                                        title: '保存设备参数配置失败',
+                                        title: '设备参数配置失败',
                                         icon: 'none'
                                     })
                                     this.writeBLECharacteristicValue(this.networkHexStr)
@@ -910,6 +912,7 @@ export default {
                                 console.log("============设备编号原始报文==>：" + hex.substring(2, 10) + "=================")
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
+                                uni.hideLoading();
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '启动补抄成功',
@@ -931,6 +934,7 @@ export default {
                                 console.log("============设备编号原始报文==>：" + hex.substring(2, 10) + "=================")
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
+                                uni.hideLoading();
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '重启抄表成功',
@@ -1276,6 +1280,10 @@ export default {
         //恢复出厂设置
         resetDeviceConfig() {
             console.log('resetDeviceConfig')
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
             this.writeBLECharacteristicValue(this.resetDeviceConfigHexStr)
         },
         //保存设备参数配置
@@ -1336,6 +1344,10 @@ export default {
 
             var crcHex = hexStrToCRC16Modbus('47 00 03 00 0A FF FF FF FF 41 02' + remoteMainIpHex + remoteBackupIpHex + gatewayHex + '00 00 00 00 00 00 00 00 53 57 43 42 2E 48 41 00 00 00 00 00 00 00 00 00' + localIpHex + '00 00' + subnetMaskHex + '00 00 00 00 00 00')
             console.log("============crc码==>：" + crcHex + "=================")
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
             this.writeBLECharacteristicValue('68 47 00 03 00 0A FF FF FF FF 41 02' + remoteMainIpHex + remoteBackupIpHex + gatewayHex + '00 00 00 00 00 00 00 00 53 57 43 42 2E 48 41 00 00 00 00 00 00 00 00 00' + localIpHex + '00 00' + subnetMaskHex + '00 00 00 00 00 00' + crcHex + '16')
         },
         //更新页面数据
@@ -1421,11 +1433,19 @@ export default {
         // 启动补抄
         startReadMeter() {
             console.log('startReadMeter')
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
             this.writeBLECharacteristicValue('68 0E 00 02 00 0F FF FF FF FF 41 05 24 16')
         },
         // 重启补抄
         restartReadMeter() {
             console.log('restartReadMeter')
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
             this.writeBLECharacteristicValue('68 0E 00 02 00 0E FF FF FF FF 41 04 F5 16')
         },
         //获取设备编号
@@ -1794,8 +1814,9 @@ export default {
         align-items: center;
 
         text {
-            margin-left: 32rpx;
+            margin-left: 35rpx;
             font-size: 35rpx;
+            color: #323233;
         }
     }
 }
