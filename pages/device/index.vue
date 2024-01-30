@@ -452,7 +452,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1rpx solid #eee;
-    padding-bottom: 20rpx;
+    padding: 20rpx 0;
     background-color: white;
 
     .title {
