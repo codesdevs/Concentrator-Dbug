@@ -167,6 +167,41 @@
                     </van-cell-group>
                 </view>
             </view>
+            <!-- 软件升级 -->
+            <view class="config" v-show="true">
+                <view class="top">
+                    <view class="title" @click="expandSoftwareUpgrading">
+                        <van-icon :name="softwareUpgradingShow ? 'arrow-down' : 'arrow-up'" />
+                        <view>软件升级</view>
+                    </view>
+                </view>
+                <view class="form" v-show="softwareUpgradingShow">
+                    <van-cell-group custom-class="form-class">
+                        <van-field :value="softwareUpgrading.fileName" disabled clearable label="文件名" />
+                        <van-field :value="softwareUpgrading.hardwareVersion" disabled clearable label="硬件版本" />
+                        <van-field :value="softwareUpgrading.softwareVersion" disabled clearable label="软件版本" />
+                        <!-- <van-field :value="softwareUpgrading.fileSize" disabled clearable label="文件大小(KB)"
+                            title-width="8em" /> -->
+                    </van-cell-group>
+                    <van-button type="primary" :block="true" size="large" color="var(--themeColor)"
+                        @click="chooseUpgradingFile">选择文件</van-button>
+                    <view style="display: flex;justify-content: space-around;margin-top: 20rpx;">
+                        <view style="flex: 1;" v-if="softwareUpgrading.fileSize != ''">
+                            <van-button type="primary" :block="true" size="large" color="var(--themeColor)"
+                                @click="notifyUpgrading">告知</van-button>
+                        </view>
+                        <view style="flex: 1;margin-left: 20rpx;" v-if="softwareUpgrading.fileSize != ''">
+                            <van-button type="primary" :block="true" size="large" color="var(--themeColor)"
+                                @click="upgrading">写入</van-button>
+                        </view>
+                        <view :style="softwareUpgrading.fileSize != '' ? 'flex: 1;margin-left: 20rpx;' : 'flex: 1;'">
+                            <van-button type="primary" :block="true" size="large" color="var(--themeColor)"
+                                @click="queryVersion">查询版本</van-button>
+                        </view>
+                    </view>
+                </view>
+            </view>
+
         </view>
         <van-popup :show="showCollectChannelPicker" round position="bottom" @close="closeCollectChannelPicker">
             <van-picker show-toolbar title="采集通道" :columns="collectChannelPicker" @confirm="collectChannelPickerConfirm"
@@ -201,6 +236,10 @@
 <script>
 import { hexStringToArrayBuffer, ab2hex, floatHexToDec, hexStrToCRC16Modbus, decToHex, hexToDec, decToHexByLen, getCs8, reverseString } from '@/utils/tools.js'
 import { bluetoothEnumValue, networkEnum, networkOperatorEnum, meterPortEnumValue, meterIndexEnumValue, collectChannelEnum, remoteStatusEnum, remoteModuleEnum, waterMeterManufacturerEnum } from '@/enum'
+var hexArr = []
+var i = 0;
+var segmentLength = 0;
+var segmentNumber = 0;
 export default {
     data() {
         return {
@@ -254,7 +293,7 @@ export default {
                 //系统运行
                 systemRunDuration: '',
                 //表计地址
-                meterAddress: '105760',
+                meterAddress: '',
                 //水表厂商
                 waterMeterManufacturer: '',
                 //MBUS端口
@@ -270,7 +309,7 @@ export default {
             //表计档案
             meterArchives: {
                 //表序号
-                number: '1',
+                number: '',
                 //厂商
                 manufacturer: '',
                 //表地址
@@ -281,7 +320,7 @@ export default {
             },
             meterArchivesShow: true,
             //保护电流
-            protectiveCurrent: '100mA',
+            protectiveCurrent: '',
             protectiveCurrentShow: true,
             timer: null,
             hexStr: '',
@@ -291,6 +330,7 @@ export default {
             configShow: true,
             sysStatusShow: true,
             readMeterShow: true,
+            softwareUpgradingShow: true,
             isConnected: false,
             //获取系统状态报文
             sysStatusHexStr: '68 0E 00 04 00 35 FF FF FF FF 41 80 54 16',
@@ -302,6 +342,8 @@ export default {
             meterArchivesHexStr: '68 11 00 04 00 10 FF FF FF FF 41 01 01 00 E3 76 16',
             //保护电流查询报文
             protectiveCurrentHexStr: '68 0E 00 04 00 73 FF FF FF FF 41 8E F2 16',
+            //查询版本报文
+            queryVersionHexStr: '68 0E 00 01 00 18 FF FF FF FF 41 46 16 16',
             //报文队列，用于存放分段回复的报文
             hexStrQueue: [],
             //采集通道picker
@@ -313,7 +355,24 @@ export default {
             showCollectChannelPicker: false,
             showDeviceNumberEditPopup: false,
             editDeviceNumberSubmitLoading: false,
-            tempDeviceNumber: null
+            tempDeviceNumber: null,
+            //软件升级信息
+            softwareUpgrading: {
+                //文件名
+                fileName: '',
+                //文件大小
+                fileSize: '',
+                //文件内容
+                fileContent: '',
+                //硬件版本
+                hardwareVersion: '',
+                //软件版本
+                softwareVersion: '',
+            },
+            //软件版本
+            softwareVersion: '',
+            //硬件版本
+            hardwareVersion: '',
         }
     },
 
@@ -321,15 +380,15 @@ export default {
         isConnected: function (val) {
             console.log('isConnected', val)
             this.refreshDeviceConfig()
-            setTimeout(() => {
-                this.refreshSysStatus()
-            }, 1000);
-            setTimeout(() => {
-                this.refreshProtectiveCurrent()
-            }, 2000);
-            setTimeout(() => {
-                this.queryMeterArchives()
-            }, 3000);
+            // setTimeout(() => {
+            //     this.refreshSysStatus()
+            // }, 1000);
+            // setTimeout(() => {
+            //     this.refreshProtectiveCurrent()
+            // }, 2000);
+            // setTimeout(() => {
+            //     this.queryMeterArchives()
+            // }, 3000);
         },
         //监听device.number
         'device.number': function (val) {
@@ -349,6 +408,7 @@ export default {
         //     this.save()
         // }, 1000);
         // this.timer = timer
+        console.log(this.softwareUpgrading.fileSize != '')
     },
     onUnload() {
         console.log('Unload')
@@ -356,6 +416,89 @@ export default {
         this.close()
     },
     methods: {
+        chooseUpgradingFile() {
+            this.softwareUpgrading.fileName = ''
+            this.softwareUpgrading.fileSize = ''
+
+            let that = this;
+            wx.chooseMessageFile({
+                count: 1, //限制选择的文件数量
+                type: 'file',//非图片和视频的文件,不选默认为all
+                extension: ['bin'],//此处限制文件类型
+                success(res) {
+                    const tempFilePaths = res.tempFiles
+                    console.log('临时路径', tempFilePaths)
+                    that.softwareUpgrading.fileName = tempFilePaths[0].name
+                    //读取bin文件内容
+                    wx.getFileSystemManager().readFile({
+                        filePath: tempFilePaths[0].path,
+                        encoding: 'hex',
+                        success(res) {
+                            console.log('读取bin文件内容', res.data)
+                            //将bin文件内容转成16进制
+                            var hex = res.data
+                            //将hex转成16进制数组
+                            var hexArray = hexStringToArrayBuffer(hex)
+                            console.log('hexArray', hexArray)
+                            //文件大小
+                            that.softwareUpgrading.fileSize = hexArray.byteLength
+                            //软件版本
+                            that.softwareUpgrading.softwareVersion = reverseString(hex.substr(0, 8))
+                            //硬件版本
+                            that.softwareUpgrading.hardwareVersion = reverseString(hex.substr(8, 8))
+                            //文件内容
+                            that.softwareUpgrading.fileContent = hex
+                        }
+                    })
+                }
+            })
+        },
+        upgrading() {
+            hexArr = this.softwareUpgrading.fileContent.match(/[\s\S]{1,2}/g) || []
+            console.log(' hexArr[24]', hexArr[24])
+            //段长
+            segmentLength = Number(hexArr[24]) + (Number(hexArr[25]) << 8) + (Number(hexArr[26]) << 16) + (Number(hexArr[27]) << 24) + 32
+            console.log('segmentLength', segmentLength)
+            //段数
+            segmentNumber = (this.softwareUpgrading.fileSize + segmentLength - 1) / segmentLength
+            segmentNumber = segmentNumber.toFixed(0)
+            console.log('segmentNumber', segmentNumber)
+            
+        },
+        //查询版本
+        queryVersion() {
+            console.log('queryVersion')
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
+            this.writeBLECharacteristicValue(this.queryVersionHexStr)
+        },
+        //告知升级
+        notifyUpgrading() {
+            console.log('notifyUpgrading')
+            uni.showLoading({
+                title: '加载中',
+                mask: true
+            })
+            //文件大小
+            var fileSize = this.softwareUpgrading.fileSize
+            fileSize = reverseString(fileSize.toString(16))
+            fileSize = fileSize.padEnd(8, '0')
+            console.log('fileSize', fileSize)
+            //硬件版本
+            var hardwareVersion = reverseString(this.softwareUpgrading.hardwareVersion)
+            console.log('hardwareVersion', hardwareVersion)
+            //软件版本
+            var softwareVersion = reverseString(this.softwareUpgrading.softwareVersion)
+            console.log('softwareVersion', softwareVersion)
+
+            var crc16Code = hexStrToCRC16Modbus(`1C 00 01 00 60 FF FF FF FF 41 ${fileSize} ${hardwareVersion} ${softwareVersion} 00 00`)
+            console.log('crc16Code', crc16Code)
+            var hex = `68 1C 00 01 00 60 FF FF FF FF 41 ${fileSize} ${hardwareVersion} ${softwareVersion} 00 00 ${crc16Code} 16`
+            console.log('hex', hex)
+            this.writeBLECharacteristicValue(hex)
+        },
         messageChange(e) {
             this.hexStr = e.detail
         },
@@ -611,6 +754,11 @@ export default {
         protectiveCurrentChange(e) {
             console.log('protectiveCurrentChange', e)
             this.protectiveCurrent = e.detail
+        },
+        //展开收缩软件升级
+        expandSoftwareUpgrading() {
+            console.log('expandSoftwareUpgrading')
+            this.softwareUpgradingShow = !this.softwareUpgradingShow
         },
         //保存保护电流
         saveProtectiveCurrent() {
@@ -996,7 +1144,16 @@ export default {
                                 }
                                 console.log("=================设备回复设置保护电流方法结束=================")
                                 break;
-
+                            case 'e0':
+                                // 告知升级
+                                console.log("=================设备回复告知升级方法开始=================")
+                                console.log("=================告知升级报文数据==>：" + hex + "=================")
+                                uni.hideLoading();
+                                uni.showToast({
+                                    title: '告知成功',
+                                    icon: 'none'
+                                })
+                                console.log("=================设备回复告知升级方法结束=================")
                             default:
                                 break;
                         }
@@ -1208,6 +1365,32 @@ export default {
                                 this.meterArchives.port = port
                                 uni.hideLoading();
                                 console.log("=================设备发送表计档案查询回复方法结束=================")
+                                break;
+                        }
+                        break;
+                    case 44:
+                        //去掉前10位,后面的不需要去除
+                        hex = hex.substring(10, hex.length)
+                        console.log("去掉前10位后的hex", hex)
+                        //校验功能码，前2位
+                        console.log("校验功能码", hex.substring(0, 2))
+                        switch (hex.substring(0, 2)) {
+                            case '98':
+                                console.log("=================设备发送软件版本回复方法开始=================")
+                                console.log("=================软件版本回复报文数据==>：" + hex + "=================")
+                                //98 38 00 27 03 41 01 01 02 01 11 30 01 24 07 A6 16
+                                //硬件版本01 01 02 01
+                                console.log("============硬件版本原始报文==>：" + hex.substring(12, 20) + "=================")
+                                var hardwareVersion = reverseString(hex.substring(12, 20))
+                                console.log("============硬件版本==>：" + hardwareVersion + "=================")
+                                this.hardwareVersion = hardwareVersion
+                                //软件版本11 30 01 24
+                                console.log("============软件版本原始报文==>：" + hex.substring(20, 28) + "=================")
+                                var softwareVersion = reverseString(hex.substring(20, 28))
+                                console.log("============软件版本==>：" + softwareVersion + "=================")
+                                this.softwareVersion = softwareVersion
+                                uni.hideLoading();
+                                console.log("=================设备发送软件版本回复方法结束=================")
                                 break;
                         }
                         break;
@@ -1822,6 +2005,6 @@ export default {
 }
 
 .form-class {
-    margin-left: -30rpx;
+    margin-left: -28rpx;
 }
 </style>
