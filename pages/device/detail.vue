@@ -86,8 +86,6 @@
                         <van-icon :name="readMeterShow ? 'arrow-down' : 'arrow-up'" />
                         <view>抄表控制</view>
                     </view>
-                    <view class="refresh"><van-button type="info" round color="var(--themeColor)" icon="replay" size="small"
-                            @click="refreshDeviceConfig" v-show="false">刷新</van-button></view>
                 </view>
                 <view class="form" v-show="readMeterShow">
                     <van-cell-group custom-class="form-class">
@@ -373,6 +371,8 @@ export default {
             softwareVersion: '',
             //硬件版本
             hardwareVersion: '',
+            //是否加载中
+            loading: false,
         }
     },
 
@@ -463,24 +463,40 @@ export default {
             segmentNumber = (this.softwareUpgrading.fileSize + segmentLength - 1) / segmentLength
             segmentNumber = segmentNumber.toFixed(0)
             console.log('segmentNumber', segmentNumber)
-            
+
         },
         //查询版本
         queryVersion() {
             console.log('queryVersion')
+            this.startLoading()
+            this.writeBLECharacteristicValue(this.queryVersionHexStr)
+        },
+        startLoading() {
             uni.showLoading({
                 title: '加载中',
                 mask: true
             })
-            this.writeBLECharacteristicValue(this.queryVersionHexStr)
+            this.loading = true
+            this.closeLoading()
+        },
+        closeLoading() {
+            //判断是否加载中
+            setTimeout(() => {
+                console.log('this.loading', this.loading)
+                if (this.loading) {
+                    uni.hideLoading()
+                    this.loading = false
+                    uni.showToast({
+                        title: '加载失败',
+                        icon: 'none'
+                    })
+                }
+            }, 5000);
         },
         //告知升级
         notifyUpgrading() {
             console.log('notifyUpgrading')
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             //文件大小
             var fileSize = this.softwareUpgrading.fileSize
             fileSize = reverseString(fileSize.toString(16))
@@ -729,10 +745,7 @@ export default {
             this.meterArchives.manufacturer = ''
             this.meterArchives.address = ''
             this.meterArchives.port = ''
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(hex)
         },
         //展开收缩保护电流
@@ -744,10 +757,7 @@ export default {
         refreshProtectiveCurrent() {
             console.log('refreshProtectiveCurrent')
             this.protectiveCurrent = ''
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(this.protectiveCurrentHexStr)
         },
         //protectiveCurrentChange
@@ -778,10 +788,7 @@ export default {
             console.log('crc16Code', crc16Code)
             var hex = `68 10 00 00 00 72 FF FF FF FF 41 ${protectiveCurrent} ${crc16Code} 16`
             console.log('hex', hex)
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(hex)
         },
         //选择采集通道确定
@@ -995,6 +1002,7 @@ export default {
                         console.log("============系统运行时长==>：" + systemRunDuration + "=================")
                         this.device.systemRunDuration = systemRunDuration
                         uni.hideLoading();
+                        this.loading = false
                         console.log("=================设备回复系统状态方法结束=================")
                         break;
                     case 66:
@@ -1018,6 +1026,7 @@ export default {
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '恢复出厂设置成功',
@@ -1040,6 +1049,7 @@ export default {
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '设备参数配置成功',
@@ -1061,6 +1071,7 @@ export default {
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '启动补抄成功',
@@ -1083,6 +1094,7 @@ export default {
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '重启抄表成功',
@@ -1129,6 +1141,7 @@ export default {
                                 var deviceNumber = this.getDeviceNumber(hex.substring(2, 10))
                                 console.log("============设备编号==>：" + deviceNumber + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 if (this.device.number == Number(deviceNumber)) {
                                     uni.showToast({
                                         title: '设置保护电流成功',
@@ -1149,6 +1162,7 @@ export default {
                                 console.log("=================设备回复告知升级方法开始=================")
                                 console.log("=================告知升级报文数据==>：" + hex + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 uni.showToast({
                                     title: '告知成功',
                                     icon: 'none'
@@ -1200,6 +1214,7 @@ export default {
                                 this.device.subnetMask = subnetMask
                                 //结束
                                 uni.hideLoading();
+                                this.loading = false
                                 console.log("=================设备回复获取网络参数方法结束=================")
                                 break;
 
@@ -1221,6 +1236,7 @@ export default {
                                 var dataCheckCode = hex.substring(16, 18)
                                 console.log('dataCheckCode', dataCheckCode)
                                 uni.hideLoading();
+                                this.loading = false
                                 if (dataCheckCode == '26') {
                                     var data = hex.substring(50, 58);
                                     console.log('data', data)
@@ -1266,6 +1282,7 @@ export default {
                                 console.log("============保护电流==>：" + protectiveCurrent + "=================")
                                 this.protectiveCurrent = protectiveCurrent
                                 uni.hideLoading();
+                                this.loading = false
                                 console.log("=================设备发送保存保护电流回复方法结束=================")
                                 break;
                         }
@@ -1285,6 +1302,7 @@ export default {
                                 var archivesNumber = hex.substring(12, 14)
                                 console.log("============档案数量==>：" + archivesNumber + "=================")
                                 uni.hideLoading();
+                                this.loading = false
                                 // uni.showModal({
                                 //     title: '请求水表档案失败！',
                                 //     content: '档案数量：' + Number(archivesNumber),
@@ -1313,6 +1331,7 @@ export default {
                                 var dataCheckCode = hex.substring(16, 18)
                                 console.log('dataCheckCode', dataCheckCode)
                                 uni.hideLoading();
+                                this.loading = false
                                 uni.showToast({
                                     title: '透转失败',
                                     icon: 'none',
@@ -1364,6 +1383,7 @@ export default {
                                 console.log("============端口==>：" + port + "=================")
                                 this.meterArchives.port = port
                                 uni.hideLoading();
+                                this.loading = false
                                 console.log("=================设备发送表计档案查询回复方法结束=================")
                                 break;
                         }
@@ -1390,6 +1410,7 @@ export default {
                                 console.log("============软件版本==>：" + softwareVersion + "=================")
                                 this.softwareVersion = softwareVersion
                                 uni.hideLoading();
+                                this.loading = false
                                 console.log("=================设备发送软件版本回复方法结束=================")
                                 break;
                         }
@@ -1463,10 +1484,7 @@ export default {
         //恢复出厂设置
         resetDeviceConfig() {
             console.log('resetDeviceConfig')
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(this.resetDeviceConfigHexStr)
         },
         //保存设备参数配置
@@ -1527,19 +1545,13 @@ export default {
 
             var crcHex = hexStrToCRC16Modbus('47 00 03 00 0A FF FF FF FF 41 02' + remoteMainIpHex + remoteBackupIpHex + gatewayHex + '00 00 00 00 00 00 00 00 53 57 43 42 2E 48 41 00 00 00 00 00 00 00 00 00' + localIpHex + '00 00' + subnetMaskHex + '00 00 00 00 00 00')
             console.log("============crc码==>：" + crcHex + "=================")
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue('68 47 00 03 00 0A FF FF FF FF 41 02' + remoteMainIpHex + remoteBackupIpHex + gatewayHex + '00 00 00 00 00 00 00 00 53 57 43 42 2E 48 41 00 00 00 00 00 00 00 00 00' + localIpHex + '00 00' + subnetMaskHex + '00 00 00 00 00 00' + crcHex + '16')
         },
-        //更新页面数据
+        //参数配置
         refreshDeviceConfig() {
             this.emptyDeviceConfig()
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(this.networkHexStr)
         },
         //置空设备参数配置
@@ -1553,10 +1565,7 @@ export default {
         //刷新系统状态
         refreshSysStatus() {
             this.emptySysStatus()
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(this.sysStatusHexStr)
         },
         //置空系统状态
@@ -1607,28 +1616,19 @@ export default {
             console.log("crc16Code", crc16Code)
             var hex = `68 28 00 05 00 78 FF FF FF FF 41${collectChannel}00 00 88 01 14 FE FE FE FE68 10${meterAddress}${waterMeterManufacturer} 01 03 1F 90 00 ${getCs8(`68 10 ${meterAddress}${waterMeterManufacturer} 01 03 1F 90 00`)}16 ${crc16Code} 16`
             console.log('transparentTransmission hex', hex)
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue(hex)
         },
         // 启动补抄
         startReadMeter() {
             console.log('startReadMeter')
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue('68 0E 00 02 00 0F FF FF FF FF 41 05 24 16')
         },
         // 重启补抄
         restartReadMeter() {
             console.log('restartReadMeter')
-            uni.showLoading({
-                title: '加载中',
-                mask: true
-            })
+            this.startLoading()
             this.writeBLECharacteristicValue('68 0E 00 02 00 0E FF FF FF FF 41 04 F5 16')
         },
         //获取设备编号
