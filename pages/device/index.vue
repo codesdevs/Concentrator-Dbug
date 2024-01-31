@@ -318,7 +318,7 @@ export default {
             } else if (devices.devices) {
                 that.deviceList.forEach(item => {
                     if (item.deviceId == devices.devices[0].deviceId) {
-                        isExist = false;
+                        isExist = true;
                     }
                 });
                 if (!isExist) {
