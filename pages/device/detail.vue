@@ -127,7 +127,7 @@
                 </view>
                 <view class="form" v-show="meterArchivesShow">
                     <van-cell-group custom-class="form-class">
-                        <van-field :value="meterArchives.number" maxlength="4" clearable label="序号" title-width="4em"
+                        <van-field :value="meterArchives.number" maxlength="4" clearable label="序号" type="digit" title-width="4em"
                             @blur="meterArchivesNumberBlur" required placeholder="请输入序号" />
                         <van-field :value="meterArchives.manufacturer" disabled clearable label="厂商" title-width="4em" />
                         <van-field :value="meterArchives.address" disabled clearable label="地址" title-width="4em" />
