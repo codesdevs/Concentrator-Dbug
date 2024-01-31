@@ -36,9 +36,11 @@
                             placeholder="请输入设备编号" @blur="numberBlur" /> -->
 
                         <van-field :value="device.remoteMainIp" required clearable label="远程主ip及端口" title-width="7.1em"
-                            placeholder="请输入远程主ip及端口" @blur="remoteMainIpBlur" />
+                            placeholder="请输入远程主ip及端口" @blur="remoteMainIpBlur" @change="remoteMainIpChange"
+                            :error-message="device.remoteMainIpError" />
                         <van-field :value="device.remoteBackupIp" required clearable label="远程备ip及端口" title-width="7.1em"
-                            placeholder="请输入远程备ip及端口" @blur="remoteBackupIpBlur" />
+                            placeholder="请输入远程备ip及端口" @blur="remoteBackupIpBlur" @change="remoteBackupIpChange"
+                            :error-message="device.remoteBackupIpError" />
                         <!-- <van-field :value="device.localIp" type="digit" clearable label="本地ip" title-width="7.1em"
                             placeholder="请输入本地ip" @blur="localIpBlur" />
                         <van-field :value="device.subnetMask" type="digit" clearable label="子网掩码" title-width="7.1em"
@@ -127,8 +129,8 @@
                 </view>
                 <view class="form" v-show="meterArchivesShow">
                     <van-cell-group custom-class="form-class">
-                        <van-field :value="meterArchives.number" maxlength="4" clearable label="序号" type="digit" title-width="4em"
-                            @blur="meterArchivesNumberBlur" required placeholder="请输入序号" />
+                        <van-field :value="meterArchives.number" maxlength="4" clearable label="序号" type="digit"
+                            title-width="4em" @blur="meterArchivesNumberBlur" required placeholder="请输入序号" />
                         <van-field :value="meterArchives.manufacturer" disabled clearable label="厂商" title-width="4em" />
                         <van-field :value="meterArchives.address" disabled clearable label="地址" title-width="4em" />
                         <van-field :value="meterArchives.port" disabled clearable label="端口" title-width="4em" />
@@ -250,8 +252,12 @@ export default {
                 number: '',
                 //远程主ip及端口
                 remoteMainIp: '',
+                //远程主ip及端口error
+                remoteMainIpError: '',
                 //远程备ip及端口
                 remoteBackupIp: '',
+                //远程备ip及端口error
+                remoteBackupIpError: '',
                 //本地ip
                 localIp: '',
                 //子网掩码
@@ -601,22 +607,19 @@ export default {
         //远程主ip及端口
         remoteMainIpBlur(e) {
             if (e.detail.value == '') {
-                uni.showToast({
-                    title: '远程主ip及端口不能为空',
-                    icon: 'none'
-                })
-                return
-            }
-            if (!this.checkIpAndPort(e.detail.value)) {
-                uni.showToast({
-                    title: '远程主ip及端口格式不正确',
-                    icon: 'none'
-                })
-                this.device.remoteMainIp = ''
+                this.device.remoteMainIpError = '远程主ip及端口不能为空'
                 return
             }
             console.log(e)
             this.device.remoteMainIp = e.detail.value
+        },
+        remoteMainIpChange(e) {
+            this.device.remoteMainIp = e.detail
+            if (!this.checkIpAndPort(e.detail)) {
+                this.device.remoteMainIpError = '远程主ip及端口格式不正确'
+            } else {
+                this.device.remoteMainIpError = ''
+            }
         },
         //使用正则表达式判断ip:port格式是否正确,返回结果为true或false
         checkIpAndPort(ipAndPort) {
@@ -631,14 +634,19 @@ export default {
         //远程备ip及端口
         remoteBackupIpBlur(e) {
             if (e.detail.value == '') {
-                uni.showToast({
-                    title: '远程备ip及端口不能为空',
-                    icon: 'none'
-                })
+                this.device.remoteBackupIpError = '远程备ip及端口不能为空'
                 return
             }
             console.log(e)
             this.device.remoteBackupIp = e.detail.value
+        },
+        remoteBackupIpChange(e) {
+            this.device.remoteBackupIp = e.detail
+            if (!this.checkIpAndPort(e.detail)) {
+                this.device.remoteBackupIpError = '远程备ip及端口格式不正确'
+            } else {
+                this.device.remoteBackupIpError = ''
+            }
         },
         //本地ip
         localIpBlur(e) {
@@ -1492,40 +1500,34 @@ export default {
             console.log('saveDeviceConfig')
             //校验远程ip及端口
             if (this.device.remoteMainIp == '') {
-                uni.showToast({
-                    title: '远程主ip及端口不能为空',
-                    icon: 'none'
-                })
+                this.device.remoteMainIpError = '远程主ip及端口不能为空'
                 return
             }
             if (this.device.remoteBackupIp == '') {
-                uni.showToast({
-                    title: '远程备ip及端口不能为空',
-                    icon: 'none'
-                })
+                this.device.remoteBackupIpError = '远程备ip及端口不能为空'
                 return
             }
-            if (this.device.localIp == '') {
-                uni.showToast({
-                    title: '本地ip不能为空',
-                    icon: 'none'
-                })
-                return
-            }
-            if (this.device.subnetMask == '') {
-                uni.showToast({
-                    title: '子网掩码不能为空',
-                    icon: 'none'
-                })
-                return
-            }
-            if (this.device.gateway == '') {
-                uni.showToast({
-                    title: '网关不能为空',
-                    icon: 'none'
-                })
-                return
-            }
+            // if (this.device.localIp == '') {
+            //     uni.showToast({
+            //         title: '本地ip不能为空',
+            //         icon: 'none'
+            //     })
+            //     return
+            // }
+            // if (this.device.subnetMask == '') {
+            //     uni.showToast({
+            //         title: '子网掩码不能为空',
+            //         icon: 'none'
+            //     })
+            //     return
+            // }
+            // if (this.device.gateway == '') {
+            //     uni.showToast({
+            //         title: '网关不能为空',
+            //         icon: 'none'
+            //     })
+            //     return
+            // }
             //获取远程主ip及端口
             var remoteMainIpHex = this.ipAndPortToHex(this.device.remoteMainIp.split(':')[0], this.device.remoteMainIp.split(':')[1])
             console.log("============远程主ip及端口==>：" + remoteMainIpHex + "=================")
