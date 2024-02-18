@@ -168,7 +168,7 @@
                 </view>
             </view>
             <!-- 软件升级 -->
-            <view class="config" v-show="true">
+            <view class="config" v-show="false">
                 <view class="top">
                     <view class="title" @click="expandSoftwareUpgrading">
                         <van-icon :name="softwareUpgradingShow ? 'arrow-down' : 'arrow-up'" />
@@ -469,6 +469,25 @@ export default {
             segmentNumber = (this.softwareUpgrading.fileSize + segmentLength - 1) / segmentLength
             segmentNumber = segmentNumber.toFixed(0)
             console.log('segmentNumber', segmentNumber)
+            //将文件内容分段后发送
+            var that = this
+            var inter = setInterval(function () {
+                var byte = new Array();
+                for (var i = 0; i < segmentLength; i++) {
+                    console.log('第' + i + '个字节', hexArr[i])
+                    byte[i] = hexArr[i];
+                }
+                hexArr.splice(0, segmentLength);
+                var hex = byte.join("");
+                console.log('hex', hex)
+                //crc16校验
+                hex = hex + hexStrToCRC16Modbus(hex)
+                console.log('hex', hex)
+                that.writeBLECharacteristicValue(hex)
+                if (hexArr.length == 0) {
+                    clearInterval(inter);
+                }
+            }, 70);
 
         },
         //查询版本
@@ -1417,6 +1436,20 @@ export default {
                                 var softwareVersion = reverseString(hex.substring(20, 28))
                                 console.log("============软件版本==>：" + softwareVersion + "=================")
                                 this.softwareVersion = softwareVersion
+                                //展示软件版本、硬件版本
+                                uni.showModal({
+                                    title: '版本信息',
+                                    content: '软件版本：' + softwareVersion + '\n' + '硬件版本：' + hardwareVersion,
+                                    showCancel: false,
+                                    confirmText: '关闭',
+                                    success: function (res) {
+                                        if (res.confirm) {
+                                            console.log('用户点击确定');
+                                        } else if (res.cancel) {
+                                            console.log('用户点击取消');
+                                        }
+                                    }
+                                });
                                 uni.hideLoading();
                                 this.loading = false
                                 console.log("=================设备发送软件版本回复方法结束=================")
